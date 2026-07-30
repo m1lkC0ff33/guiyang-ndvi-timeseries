@@ -1,108 +1,71 @@
-# Guiyang NDVI Time Series Analysis (2015–2025)
+# Analysis Report: Vegetation Change in Guiyang City Based on Landsat NDVI Time Series (2015–2025)
 
-## Overview
+## 1. Background and Objective
 
-This project analyzes vegetation dynamics in Guiyang, China, over a 10-year period using Landsat satellite imagery. The analysis uses the Normalized Difference Vegetation Index (NDVI) to assess changes in vegetation health and coverage between urban and suburban areas.
+Guiyang, the capital of Guizhou Province in southwestern China, has experienced rapid urbanization over the past decade. Urban expansion often exerts pressure on surrounding vegetation ecosystems, making it essential to monitor vegetation dynamics quantitatively. The Normalized Difference Vegetation Index (NDVI), derived from red and near-infrared reflectance, is a widely adopted proxy for vegetation vigor and canopy density.
 
-**Key findings**: [To be filled after analysis]
+This study aims to: (1) construct a multi-year NDVI time series for Guiyang using Landsat 8/9 imagery; (2) quantify the inter-annual trend of vegetation cover from 2017 to 2025; and (3) compare vegetation trajectories between the urban core and suburban areas to assess whether urbanization has differentially affected vegetation.
 
-## Data
+## 2. Data and Methods
 
-- **Source**: USGS EarthExplorer
-- **Sensor**: Landsat 8 (2015–2021), Landsat 9 (2022–2025)
-- **Level**: Level-2 (atmospherically corrected surface reflectance)
-- **Temporal range**: 2015-01 to 2025-07
-- **Spatial extent**: Guiyang administrative region
-- **Cloud cover**: < 20% per scene
-- **Acquisition**: 2–3 scenes per year (summer/autumn, vegetation growing season)
+### 2.1 Data Source
 
-## Methodology
+A total of 19 Landsat Collection 2 Level-2 Surface Reflectance scenes were acquired from the USGS EarthExplorer platform, covering WRS-2 path/row 127/41 and 127/42 (2015-10-05 to 2025-05-09). The dataset comprises 14 Landsat 8 and 5 Landsat 9 scenes, with MTL-reported cloud cover ranging from 0.03% to 20.36%. Only the red (Band 4) and near-infrared (Band 5) bands were used.
 
-1. **Data acquisition**: Download Landsat Level-2 imagery from USGS EarthExplorer.
-2. **Preprocessing**: Extract Red (Band 4) and NIR (Band 5) bands; mask to Guiyang boundary.
-3. **NDVI calculation**: Compute NDVI = (NIR - Red) / (NIR + Red) for each scene.
-4. **Time series extraction**: Sample NDVI values at urban and suburban sites; compute annual means.
-5. **Statistical analysis**: Trend detection and comparison between regions.
-6. **Visualization**: Generate time series plots and spatial distribution maps.
+### 2.2 Preprocessing
 
-## Repository Structure
+Raw digital numbers were converted to surface reflectance using per-scene scaling parameters parsed from the MTL metadata (`SR = DN × mult + add`). Fill pixels (DN = 0) and out-of-range values were masked as NaN. Scenes were optionally clipped to the Guiyang administrative boundary.
 
-```
-guiyang-ndvi-timeseries/
-├── data/
-│   ├── raw/                  # 原始 Landsat 影像（.TIF，被 .gitignore 排除）
-│   │   └── *.TIF, *_MTL.txt   # SR_B4 (Red), SR_B5 (NIR), MTL 元数据
-│   └── processed/            # 预处理产物
-│       ├── <scene_id>/        #   每景一个子目录
-│       │   ├── *_SR_B4_reflectance.tif   # 已缩放的反射率 (float32)
-│       │   └── *_SR_B5_reflectance.tif
-│       ├── guiyang_boundary.geojson      # 贵阳市边界矢量（用户提供）
-│       └── scene_metadata.csv            # 所有景的元数据汇总
-├── src/
-│   ├── __init__.py
-│   ├── config.py             # 路径与参数集中管理
-│   ├── download.py           # 数据下载元数据记录（非自动下载工具）
-│   ├── preprocess.py         # 数据读取与预处理（缩放、裁剪）
-│   ├── ndvi_calc.py          # NDVI 计算
-│   ├── timeseries.py         # 时间序列采样
-│   ├── analyze.py            # 统计分析（趋势、显著性）
-│   └── visualize.py          # 制图与可视化
-├── config/
-│   └── params.yaml           # 路径、参数 YAML 配置
-├── notebooks/                # Jupyter Notebooks（开发探索用）
-├── outputs/
-│   ├── figures/              # 最终成果图（PNG/PDF）
-│   ├── tables/               # 统计结果表格（CSV）
-│   └── report.md             # 英文分析报告
-├── tests/
-│   └── test_preprocess.py    # preprocess 模块单元测试
-├── requirements.txt
-├── README.md
-└── LICENSE
-```
+NDVI was computed as `(NIR − Red) / (NIR + Red)`, with a denominator threshold of 0.0001 to suppress unstable values over water bodies.
 
-## Usage
+### 2.3 Quality Screening
 
-### 1. 环境准备
+Three Tier-2 scenes (2015, 2016, 2020) exhibited anomalously low NDVI means (−0.010 to +0.006), despite MTL cloud cover below 12%. Spectral diagnosis confirmed cloud contamination — the red and near-infrared reflectance were both elevated (~0.67) and nearly identical, a hallmark of cloud scattering. These scenes were flagged as `cloud_contaminated` and excluded from trend analysis, leaving 16 valid scenes spanning 2017–2025 (9 effective years).
 
-```bash
-pip install -r requirements.txt
-```
+### 2.4 Trend Analysis
 
-### 2. 数据放置
+A stratified sampling design placed 20 points (8 urban, 12 suburban) within the common valid extent of all scenes. For each point, annual NDVI means were computed.
 
-将 Landsat 原始影像放入 `data/raw/`，命名遵循 USGS 默认格式：
+Vegetation trends were assessed using two complementary methods:
+- **Linear regression** (ordinary least squares) to estimate the rate of change (slope, units: NDVI/year) and its statistical significance (t-test, α = 0.05).
+- **Mann-Kendall test**, a non-parametric monotonic trend test robust to non-normality and small samples.
 
-```
-data/raw/LC08_L2SP_127041_20180607_20200831_02_T1_SR_B4.TIF
-data/raw/LC08_L2SP_127041_20180607_20200831_02_T1_SR_B5.TIF
-data/raw/LC08_L2SP_127041_20180607_20200831_02_T1_MTL.txt
-```
+## 3. Results
 
-### 3. 准备边界矢量
+### 3.1 Overall Trend
 
-将贵阳市行政边界文件命名为 `guiyang_boundary.geojson`（或 `.shp`），放入 `data/processed/`。
-推荐来源：[阿里 DataV 行政区划选择器](http://datav.aliyun.com/portal/school/atlas/area_selector)。
+Both regions exhibited a slight positive NDVI trend over 2017–2025, but neither was statistically significant:
 
-### 4. 运行预处理
+| Region | Slope (/yr) | R² | p-value | Significant? | MK Trend | MK p-value |
+|--------|-------------|------|---------|--------------|----------|------------|
+| Urban | +0.00537 | 0.041 | 0.583 | No | no_trend | 0.754 |
+| Suburban | +0.00610 | 0.051 | 0.539 | No | no_trend | 0.602 |
 
-```bash
-python src/preprocess.py
-```
+At the point level, 16 of 20 sampling points showed positive slopes (range: −0.014 to +0.029 /yr), but only 2 reached the p < 0.05 significance threshold.
 
-预处理后 `data/processed/` 会包含：
-- 每景的反射率浮点 GeoTIFF（已应用缩放、按边界裁剪）
-- `scene_metadata.csv`：所有景的元数据汇总（传感器、日期、云量、缩放参数）
+### 3.2 Urban vs. Suburban Comparison
 
-### 5. 后续步骤
+| Metric | Urban | Suburban | Difference |
+|--------|-------|----------|------------|
+| Mean NDVI | 0.447 | 0.384 | +0.063 |
+| Trend slope (/yr) | +0.00537 | +0.00610 | −0.00074 |
 
-```bash
-python src/ndvi_calc.py      # 计算 NDVI
-python src/timeseries.py     # 提取时间序列
-python src/analyze.py        # 统计分析
-python src/visualize.py      # 生成成果图
-```
+The suburban area exhibited a marginally stronger greening rate than the urban core (+0.00074/yr), although the difference is small and not formally tested for significance. The urban core maintained a higher absolute NDVI (0.447 vs. 0.384).
 
-## License
+### 3.3 Cloud Contamination Impact
 
-MIT — see [LICENSE](LICENSE)
+The three excluded Tier-2 scenes had NDVI means near zero (−0.010 to +0.006), starkly lower than valid Tier-1 scenes (typically 0.35–0.53). Their inclusion would have severely biased the trend downward — underscoring the importance of spectral quality screening beyond metadata-based cloud cover filtering.
+
+## 4. Conclusion
+
+This study analyzed 16 valid Landsat scenes (2017–2025) to assess vegetation change in Guiyang. The key quantitative findings are:
+
+1. **Slight, non-significant greening**: NDVI increased at approximately **+0.0054/yr** in the urban core and **+0.0061/yr** in suburban areas, but neither trend reached statistical significance (p > 0.53), and the Mann-Kendall test confirmed no monotonic trend.
+
+2. **Suburban greening slightly outpaces urban**: the suburban slope exceeded the urban slope by **0.00074/yr**, suggesting vegetation recovery in suburban zones marginally outpaces urban vegetation change, though the difference is modest.
+
+3. **Urban NDVI exceeds suburban**: the urban core maintained a **0.063 higher** mean NDVI than suburbs, likely reflecting established urban green infrastructure (parks, street trees) rather than natural vegetation.
+
+4. **Cloud screening is essential**: three Tier-2 scenes with MTL cloud cover < 12% were spectrally diagnosed as cloud-contaminated; their exclusion was critical to avoid spurious downward trends.
+
+In summary, Guiyang's vegetation cover remained relatively stable over the study period, with no statistically significant degradation or improvement. The slight positive tendency in both regions may reflect recent urban greening policies, but longer time series and additional explanatory variables (climate, land-use change) would be needed to confirm drivers.

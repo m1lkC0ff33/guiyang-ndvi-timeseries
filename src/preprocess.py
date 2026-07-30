@@ -65,6 +65,7 @@ from config import (  # noqa: E402
     SR_FILL_DN,
     SR_VALID_MAX,
     SR_VALID_MIN,
+    TABLES_DIR,
     load_params,
     resolve_boundary_path,
 )
@@ -519,8 +520,8 @@ def main() -> int:
         record = preprocess_scene(scene, processed_dir, boundary_gdf)
         records.append(record)
 
-    # 写元数据 CSV
-    metadata_csv = processed_dir / "scene_metadata.csv"
+    # 写元数据 CSV（输出到 outputs/tables/）
+    metadata_csv = TABLES_DIR / "scene_metadata.csv"
     write_metadata_csv(records, metadata_csv)
     print("-" * 70)
     print(f"[OK] 元数据汇总: {metadata_csv.relative_to(PROJECT_ROOT)}")
