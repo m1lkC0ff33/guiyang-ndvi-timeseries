@@ -53,7 +53,7 @@ NDVI ranges from −1 to +1, with values above ~0.3 indicating moderate-to-dense
 
 ### 2.2 Auxiliary Data
 
-- **Administrative boundary**: GeoJSON of Guiyang municipality (optional, for clipping).
+- **Administrative boundary**: GeoJSON of Guiyang municipality.
 - **Metadata**: MTL text files accompanying each scene (scaling parameters, cloud cover, sun angles, CRS).
 
 ---
@@ -270,90 +270,7 @@ This study analyzed 16 quality-screened Landsat 8/9 scenes (2017–2025) to asse
 
 ---
 
-## 7. Figures
-
-| Figure | File | Description |
-|--------|------|-------------|
-| Fig. 1 | `outputs/figures/ndvi_timeseries_trend.png` | Annual NDVI means (±1σ) with OLS trend lines |
-| Fig. 2 | `outputs/figures/trend_spatial_map.png` | Per-point trend slopes; color = slope, black edge = p < 0.05 |
-| Fig. 3 | `outputs/figures/region_comparison.png` | Year-by-year urban vs suburban box plots |
-| Fig. 4 | `outputs/figures/ndvi_spatial_maps.png` | NDVI spatial distribution, 4 representative years |
-
----
-
-## 8. Results Tables
-
-All quantitative outputs are stored as CSV in `outputs/tables/`:
-
-| File | Content | Rows |
-|------|---------|------|
-| `scene_metadata.csv` | Per-scene metadata (sensor, date, cloud, tier, scaling) | 19 |
-| `ndvi_metadata.csv` | Per-scene NDVI statistics (mean, std, valid count) | 19 |
-| `quality_flags.csv` | Scene quality flags (valid / cloud_contaminated) | 19 |
-| `timeseries_point_values.csv` | Per-point per-scene NDVI | 20 × n_scenes |
-| `timeseries_annual_mean.csv` | Per-point annual NDVI means | 20 |
-| `timeseries_region_mean.csv` | Per-region annual statistics | 22 |
-| `trend_per_point.csv` | Per-point OLS + MK trend results | 20 |
-| `trend_per_region.csv` | Per-region OLS + MK trend results | 2 |
-| `analysis_summary.csv` | Cross-region comparison summary | 3 |
-
----
-
-## 9. Reproducibility
-
-### 9.1 Environment
-
-```bash
-pip install rasterio numpy pandas matplotlib geopandas pyyaml pytest
-```
-
-### 9.2 Run the Full Pipeline
-
-```bash
-# From project root:
-python src/preprocess.py     # raw → reflectance TIFs + scene_metadata.csv
-python src/ndvi_calc.py      # reflectance → NDVI TIFs + ndvi_metadata.csv
-python src/timeseries.py     # NDVI TIFs → sampling-point CSVs
-python src/analyze.py        # CSVs → trend/quality/summary CSVs
-python src/visualize.py      # CSVs + TIFs → PNG figures
-```
-
-Each step is idempotent (skips already-processed scenes).
-
-### 9.3 Run Tests
-
-```bash
-python -m pytest tests/ -v     # 78 tests
-```
-
----
-
-## 10. Project Structure
-
-```
-guiyang-ndvi-timeseries/
-├── config/params.yaml          # configurable thresholds & paths
-├── data/
-│   ├── raw/                    # USGS downloads (B4/B5/MTL)
-│   └── processed/              # reflectance + NDVI GeoTIFFs
-├── outputs/
-│   ├── tables/                # 9 CSV result files
-│   └── figures/                # 4 PNG figures
-├── record/                     # study notes (not in repo)
-├── src/
-│   ├── config.py              # centralized paths & constants
-│   ├── preprocess.py          # step 2: read & preprocess
-│   ├── ndvi_calc.py           # step 3: compute NDVI
-│   ├── timeseries.py          # step 4: extract time series
-│   ├── analyze.py             # step 5: trend analysis
-│   └── visualize.py           # step 6: figures
-├── tests/                      # 78 unit tests
-└── README.md                   # this file
-```
-
----
-
-## 11. Data Source
+## 7. Data Source
 
 - **USGS EarthExplorer**: https://earthexplorer.usgs.gov/
 - **Landsat Collection 2 Level-2 Science Products**: https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products
